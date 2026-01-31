@@ -1,85 +1,60 @@
-#include<bits/stdc++.h>
-using namespace std;
-const int maxn = 2e5 + 69;
-#define LL long long
-LL arr[maxn], tree[4 * maxn], lazy[4 * maxn];
-
-void build(int i, int l, int r){
-    if(l == r){
-        tree[i] = arr[l];
-        lazy[i] = 0;
-        return;
+struct SEGTREE{
+    int n;
+    vector<ll> a, tree, lazy;
+    SEGTREE(vector<ll> &x){
+        this->n = x.size();
+        this->a = x;
+        tree.assign(4 * n + 1);
+        lazy.assign(4 * n + 1);
+        build(0, 0, n - 1);
     }
-    int mid = l + (r - l) / 2;
-    build(2 * i + 1, l, mid);
-    build(2 * i + 2, mid + 1, r);
-    tree[i] = tree[2 * i + 1] + tree[2 * i + 2];
-}
-
-void push(int i, int l, int r){
-    if(lazy[i] != 0){
-        tree[i] += lazy[i] * (r - l + 1);
-        if(l != r){
-            lazy[2 * i + 1] += lazy[i];
-            lazy[2 * i + 2] += lazy[i];
-        }
-        lazy[i] = 0;
-    }
-}
-
-void update(int i, int l, int r, int ql, int qr, LL val){
-    push(i, l, r);
-    if(l > qr || r < ql) return;
-    if(ql <= l && r <= qr){
-        lazy[i] += val;
-        push(i, l, r);
-        return;
-    }
-    int mid = l + (r - l) / 2;
-    update(2 * i + 1, l, mid, ql, qr, val);
-    update(2 * i + 2, mid + 1, r, ql, qr, val);
-    tree[i] = tree[2 * i + 1] + tree[2 * i + 2];
-}
-
-LL query(int i, int l, int r, int ql, int qr){
-    push(i, l, r);
-    if(l > qr || r < ql){
-        return 0;
-    }
-    if(ql <= l && r <= qr){
-        return tree[i];
-    }
-    int mid = l + (r - l) / 2;
-    return query(2 * i + 1, l, mid, ql, qr) + query(2 * i + 2, mid + 1, r, ql, qr);
-}
-
-int main(){
-    ios_base::sync_with_stdio(false);
-    cin.tie(0);
-
-    int n, q;
-    cin >> n >> q;
-
-    for(int i = 0; i < n; i++){
-        cin >> arr[i];
-    }
-    build(0, 0, n - 1);
-    while(q--){
-        int x;
-        cin >> x;
-
-        if(x == 1){
-           LL l, r, val;
-           cin >> l >> r >> val;
-           --l, --r;
-           update(0, 0, n - 1, l, r, val);
-        } else{
-            LL l, r;
-            cin >> l >> r;
-            --l, --r;
-            LL ans = query(0, 0, n - 1, l, r);
-            cout << ans << '\n';
+    void push(int i, int lo, int hi){
+        if(lazy[i]){
+            tree[i] += (hi - lo + 1) * lazy[i];
+            if(lo != hi){
+                lazy[(i << 1) + 1] += lazy[i];
+                lazy[(i << 1) + 2] += lazy[i];
+            }
+            lazy[i] = 0;
         }
     }
-    return 0;
-}
+    void build(int i, int lo, int hi){
+        if(lo == hi){
+            tree[i] = a[lo];
+            lazy[i] = 0;
+            return;
+        }
+        int mid = lo + hi >> 1;
+        build((i << 1) + 1, lo, mid);
+        build((i << 1) + 2, mid + 1, hi);
+        tree[i] = tree[(i << 1) + 1] + tree[(i << 1) + 2];
+    }
+    void update(int i, int lo, int hi, int ql, int qr, ll val){
+        push(i, lo, hi);
+        if(ql > hi || qr < lo){
+            return;
+        }
+        if(ql <= lo && hi <= qr){
+            lazy[i] += val;
+            push(i, lo, hi);
+            return;
+        }
+        int mid = lo + hi >> 1;
+        update((i << 1) + 1, lo, mid, ql, qr, val);
+        update((i << 1) + 2, mid + 1, hi, ql, qr, val);
+        tree[i] = tree[(i << 1) + 1] + tree[(i << 1) + 2];
+    }
+    ll query(int i, int lo, int hi, int ql, int qr){
+        push(i, lo, hi);
+        if(ql > hi || qr < lo){
+            return 0;
+        }
+        if(ql <= lo && hi <= qr){
+            return tree[i];
+        }
+        int mid = lo + hi >> 1;
+        ll left = query((i << 1) + 1, lo, mid, ql, qr);
+        ll right = query((i << 1) + 2, mid + 1, hi, ql, qr);
+        return left + right;
+    }
+};
